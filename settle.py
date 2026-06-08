@@ -27,8 +27,8 @@ OUT = HERE / "out"
 # (column, kind). kind: num | age | pick | scoreline
 QUESTIONS = [
     ("q1_longest_name_letters", "num"),
-    ("q2_own_goals", "num"),
-    ("q3_red_cards", "num"),
+    ("q2_own_goals", "pick"),
+    ("q3_red_cards", "pick"),
     ("q4_pen_shootouts", "num"),
     ("q5_final_goals", "num"),
     ("q6_continent", "pick"),

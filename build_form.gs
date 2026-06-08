@@ -11,8 +11,10 @@ function buildPool() {
   form.addTextItem().setTitle('Your name').setRequired(true);
 
   form.addTextItem().setTitle('Q1. Number of letters in the longest goalscorer\'s name (first + surname; Trent Alexander-Arnold = 20)').setRequired(true);
-  form.addTextItem().setTitle('Q2. Total own goals in the tournament (50 pts)').setRequired(true);
-  form.addTextItem().setTitle('Q3. Total red cards (50 pts)').setRequired(true);
+  form.addMultipleChoiceItem().setTitle('Q2. Total own goals in the tournament (50 pts)')
+      .setChoiceValues(['<6','6-10','11-15','16+']).setRequired(true);
+  form.addMultipleChoiceItem().setTitle('Q3. Total red cards (50 pts)')
+      .setChoiceValues(['<4','4-7','8-11','12+']).setRequired(true);
   form.addTextItem().setTitle('Q4. Penalty shootouts - matches decided on pens (50 pts)').setRequired(true);
   form.addTextItem().setTitle('Q5. Goals in the final, incl. shootout kicks (50 pts)').setRequired(true);
 
@@ -26,8 +28,8 @@ function buildPool() {
   form.addTextItem().setTitle('Q8. Youngest goalscorer age, e.g. 18y 90d (25 pts)').setRequired(true);
   form.addTextItem().setTitle('Q9. A scoreline that happens exactly once, e.g. 3-2 (reversed scores are the same)').setRequired(true);
 
-  form.addMultipleChoiceItem().setTitle('Q10. Fastest goal - 10-second band')
-      .setChoiceValues(['0-10s','10-20s','20-30s','30-40s','40-50s','50-60s','60-70s','70-80s','80-90s','90s+']).setRequired(true);
+  form.addMultipleChoiceItem().setTitle('Q10. Fastest goal - 20-second band')
+      .setChoiceValues(['1-20s','21-40s','41-60s','61-80s','>80s']).setRequired(true);
 
   form.addMultipleChoiceItem().setTitle('Q11. Total goals - band')
       .setChoiceValues(['<220','220-240','240-260','260-270','270-280','280-290',

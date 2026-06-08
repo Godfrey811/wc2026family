@@ -239,11 +239,11 @@ SCORELINE_ONCE_HISTORY = [
 
 # Fastest goal in each of the last five tournaments (chronological).
 FASTEST_GOALS = [
-    ("WC 2014", "Clint Dempsey", "USA", "30s", "30-40s"),
-    ("WC 2018", "Mathias Jørgensen", "Denmark", "55s", "50-60s"),
-    ("Euro 2020", "Emil Forsberg", "Sweden", "81s (1:21)", "80-90s"),
-    ("WC 2022", "Alphonso Davies", "Canada", "67s", "60-70s"),
-    ("Euro 2024", "Nedim Bajrami", "Albania", "23s", "20-30s"),
+    ("WC 2014", "Clint Dempsey", "USA", "30s", "21-40s"),
+    ("WC 2018", "Mathias Jørgensen", "Denmark", "55s", "41-60s"),
+    ("Euro 2020", "Emil Forsberg", "Sweden", "81s (1:21)", ">80s"),
+    ("WC 2022", "Alphonso Davies", "Canada", "67s", "61-80s"),
+    ("Euro 2024", "Nedim Bajrami", "Albania", "23s", "21-40s"),
 ]
 
 # Static helper notes, one per pool question.
@@ -255,11 +255,12 @@ QUESTION_GUIDE = [
      "goalscorers from recent tournaments).</i>"),
     ("2. Own goals in the tournament (50 pts)",
      "Wildly swingy and impossible to call precisely. Based on recent tournaments, over 104 games the total "
-     "might land somewhere between ~<b>3</b> and ~<b>22</b>. <i>(Excludes shootouts.)</i>"
+     "might land somewhere between ~<b>3</b> and ~<b>22</b>. Pick a band: <b>&lt;6 · 6-10 · 11-15 · 16+</b>. "
+     "<i>(Excludes shootouts.)</i>"
      "</p><p><i>See the “Recent tournaments at a glance” and “Per game → what it means for 2026 (104 games)” tables below (own-goals row).</i>"),
     ("3. Red cards in the tournament (50 pts)",
      "VAR keeps modern World Cups low. Based on recent tournaments, over 104 games it might land somewhere "
-     "between ~<b>2</b> and ~<b>16</b> (the recent norm is nearer ~6-7)."
+     "between ~<b>2</b> and ~<b>16</b> (the recent norm is nearer ~6-7). Pick a band: <b>&lt;4 · 4-7 · 8-11 · 12+</b>."
      "</p><p><i>See the “Recent tournaments at a glance” and “Per game → what it means for 2026 (104 games)” tables below (red-cards row).</i>"),
     ("4. Penalty shootouts (50 pts)",
      "Recent tournaments had <b>3-5</b>. 2026 has <b>double the knockout games</b> (32 vs 16), so just double "
@@ -296,14 +297,13 @@ QUESTION_GUIDE = [
      "<b>25</b> each. (One winning scoreline + one picker → the full 100.) Shootouts don't change a "
      "scoreline.</i></p><p><i>See the “Q9 - scorelines that landed exactly once, recent tournaments” section below.</i>"),
     ("10. Fastest goal of the tournament (band)",
-     "Pick a 10-second band for the tournament's fastest goal: <b>0-10s · 10-20s · 20-30s · 30-40s · 40-50s · "
-     "50-60s · 60-70s · 70-80s · 80-90s · 90s+ (1:30+)</b>. The all-time WC record is Şükür's 10.8s (2002)."
+     "Pick a 20-second band for the tournament's fastest goal: <b>1-20s · 21-40s · 41-60s · 61-80s · &gt;80s</b>. "
+     "The all-time WC record is Şükür's 10.8s (2002)."
      "</p><p><i>See the “Q10 - fastest goal in the last 5 tournaments” section below (and the band each falls in).</i>"),
     ("11. Total goals in the whole tournament (band)",
      "Goals/game has trended up and there are far more games now - <b>≈285</b> is the central call. Pick a band "
-     "(symmetric around 285): <b>&lt;220 · 220-240 · 240-260 · 260-270 · 270-280 · 280-290 · 290-300 · "
-     "300-310 · 310-330 · 330-350 · 350+</b>. The all-time record of 172 (a 64-game number) is a terrible "
-     "anchor. <i>(Excludes shootout kicks.)</i>"
+     "(centred on 285): <b>&lt;270 · 270-285 · 285-300 · &gt;300</b>. The all-time record of 172 (a 64-game "
+     "number) is a terrible anchor. <i>(Excludes shootout kicks.)</i>"
      "</p><p><i>See the “Recent tournaments at a glance” and “Per game → what it means for 2026 (104 games)” tables below (total-goals row).</i>"),
 ]
 
@@ -535,7 +535,7 @@ more once-only scorelines - and some very rare ones may now repeat.</p>
 
 <h2>Q10 - fastest goal in the last 5 tournaments <span class="mark">★★</span></h2>
 {fastest}
-<p class="sub">Recent fastest goals land all over (20-30s up to 80-90s) - no clear favourite band. Bajrami's
+<p class="sub">Recent fastest goals land all over (21-40s up to &gt;80s) - no clear favourite band. Bajrami's
 23s (Euro '24) was the fastest Euros goal ever; the all-time WC record is Şükür's 10.8s (2002).</p>
 
 </body></html>"""
@@ -554,26 +554,47 @@ DEMO_NAMES = ["Player A", "Player B", "Player C", "Player D", "Player E", "Playe
               "Player G", "Player H", "Player I", "Player J", "Player K", "Player L"]
 DEMO_OPTIONS = {
     "q1_longest_name_letters": [str(x) for x in range(18, 25)],
-    "q2_own_goals": [str(x) for x in range(4, 20)],
-    "q3_red_cards": [str(x) for x in range(2, 16)],
+    "q2_own_goals": ["<6", "6-10", "11-15", "16+"],
+    "q3_red_cards": ["<4", "4-7", "8-11", "12+"],
     "q4_pen_shootouts": [str(x) for x in range(5, 12)],
     "q5_final_goals": [str(x) for x in range(1, 8)],
     "q6_continent": ["Europe", "Europe", "Europe", "South America", "South America", "Africa", "Asia"],
     "q7_group_fewest_goals": ["Group " + c for c in "ABCDEFGHIJKL"],
     "q8_youngest_age": ["17y 300d", "18y 50d", "18y 150d", "18y 250d", "19y 10d"],
     "q9_scoreline_once": ["3-2", "4-1", "5-3", "4-2", "3-3", "2-0", "5-2"],
-    "q10_fastest_goal_band": ["10-20s", "20-30s", "30-40s", "40-50s", "50-60s", "60-70s"],
-    "q11_total_goals_band": ["260-270", "270-280", "280-290", "290-300", "300-310"],
+    "q10_fastest_goal_band": ["1-20s", "21-40s", "41-60s", "61-80s", ">80s"],
+    "q11_total_goals_band": ["<270", "270-285", "285-300", ">300"],
 }
 
 
+def _own_goals_band(n):
+    if n < 6:
+        return "<6"
+    if n < 11:
+        return "6-10"
+    if n < 16:
+        return "11-15"
+    return "16+"
+
+
+def _red_cards_band(n):
+    if n < 4:
+        return "<4"
+    if n < 8:
+        return "4-7"
+    if n < 12:
+        return "8-11"
+    return "12+"
+
+
 def _total_goals_band(n):
-    for hi, label in [(220, "<220"), (240, "220-240"), (260, "240-260"), (270, "260-270"),
-                      (280, "270-280"), (290, "280-290"), (300, "290-300"), (310, "300-310"),
-                      (330, "310-330"), (350, "330-350")]:
-        if n < hi:
-            return label
-    return "350+"
+    if n < 270:
+        return "<270"
+    if n <= 285:
+        return "270-285"
+    if n <= 300:
+        return "285-300"
+    return ">300"
 
 
 def build_live_results(agg, live_feed):
@@ -581,18 +602,21 @@ def build_live_results(agg, live_feed):
     Current LIVE snapshot for the leaderboard + outcomes table. Reflects what's known
     SO FAR (0 before kickoff), not projections. Anything not yet determinable is left
     absent (renders as '-').
-      2 own goals / 3 red cards / 4 shootouts: running counts (0 now)
-      1 longest scorer, 9 scorelines-once, 11 total-goals band: appear once games are played
-      5 final goals, 6 continent, 8 youngest age, 10 fastest goal: from live_feed when known
+      4 shootouts: running count (0 now)
+      2 own-goals band, 11 total-goals band: appear once games are played
+      1 longest scorer, 9 scorelines-once: appear once games are played
+      3 red-cards band, 5 final goals, 6 continent, 8 youngest age, 10 fastest goal: from live_feed when known
     """
     from longest_names_wiki import name_letters
     lf = {k: v for k, v in (live_feed or {}).items() if v not in ("", None)}
     gp = agg["matches_played"]
     res = {
-        "q2_own_goals": agg["own_goals"],
-        "q3_red_cards": lf.get("q3_red_cards", 0),
         "q4_pen_shootouts": len(agg["penalty_shootouts"]),
     }
+    if gp:                                   # 2 own goals so far -> band
+        res["q2_own_goals"] = _own_goals_band(agg["own_goals"])
+    if lf.get("q3_red_cards") not in (None, ""):   # 3 red cards (manual count) -> band
+        res["q3_red_cards"] = _red_cards_band(int(float(lf["q3_red_cards"])))
     if agg["scorers"]:                       # 1 longest-named scorer so far
         res["q1_longest_name_letters"] = max(name_letters(n)[0] for (n, _t) in agg["scorers"])
     if gp:                                   # 9 scorelines that have happened exactly once so far
@@ -653,7 +677,6 @@ def write_html(agg, players, standings=None, is_demo=False, outcomes=None):
 
     live_counts = [
         live_count_row("Own goals (Q2)", agg["own_goals"]),
-        live_count_row("Red cards (Q3)", int(outcomes.get("q3_red_cards") or 0)),
         live_count_row("Penalty shootouts (Q4)", len(agg["penalty_shootouts"])),
         live_count_row("Total goals (Q11)", agg["total_goals"]),
     ]
