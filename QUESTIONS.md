@@ -25,4 +25,4 @@ up across all questions into one leaderboard, prizes to the top.
 | 8 | **Youngest goalscorer's age** - years + days, e.g. 18y 110d | closest number | 25 | ______ |
 | 9 | **Pick a scoreline that happens exactly once** (e.g. 3-2). **Reversed scores are the same** - a 4-3 and a 3-4 are one result and count together. **Scoring:** the pot splits across the winning (once-only) scorelines, then each scoreline's share splits among its pickers (alone on a once-only scoreline = a whole share) - *full worked example (5-4 vs 3-3) in the [stats guide](https://godfrey811.github.io/wc2026family/guide.html) (question 9)* | pick | 100 | ______ |
 | 10 | **Fastest goal** of the tournament - pick a 20-second band: `1-20s` / `21-40s` / `41-60s` / `61-80s` / `>80s` | pick band | 100 | ______ |
-| 11 | **Total goals** - pick a band: `<270` / `270-285` / `285-300` / `>300` (excludes shootout kicks) | pick band | 100 | ______ |
+| 11 | **Total goals** - pick a band: `<270` / `270-285` / `286-300` / `>300` (excludes shootout kicks) | pick band | 100 | ______ |

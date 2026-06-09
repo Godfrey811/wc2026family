@@ -302,7 +302,7 @@ QUESTION_GUIDE = [
      "</p><p><i>See the “Q10 - fastest goal in the last 5 tournaments” section below (and the band each falls in).</i>"),
     ("11. Total goals in the whole tournament (band)",
      "Goals/game has trended up and there are far more games now - <b>≈285</b> is the central call. Pick a band "
-     "(centred on 285): <b>&lt;270 · 270-285 · 285-300 · &gt;300</b>. The all-time record of 172 (a 64-game "
+     "(centred on 285): <b>&lt;270 · 270-285 · 286-300 · &gt;300</b>. The all-time record of 172 (a 64-game "
      "number) is a terrible anchor. <i>(Excludes shootout kicks.)</i>"
      "</p><p><i>See the “Recent tournaments at a glance” and “Per game → what it means for 2026 (104 games)” tables below (total-goals row).</i>"),
 ]
@@ -563,7 +563,7 @@ DEMO_OPTIONS = {
     "q8_youngest_age": ["17y 300d", "18y 50d", "18y 150d", "18y 250d", "19y 10d"],
     "q9_scoreline_once": ["3-2", "4-1", "5-3", "4-2", "3-3", "2-0", "5-2"],
     "q10_fastest_goal_band": ["1-20s", "21-40s", "41-60s", "61-80s", ">80s"],
-    "q11_total_goals_band": ["<270", "270-285", "285-300", ">300"],
+    "q11_total_goals_band": ["<270", "270-285", "286-300", ">300"],
 }
 
 
@@ -593,7 +593,7 @@ def _total_goals_band(n):
     if n <= 285:
         return "270-285"
     if n <= 300:
-        return "285-300"
+        return "286-300"
     return ">300"
 
 

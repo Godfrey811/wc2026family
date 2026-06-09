@@ -32,7 +32,7 @@ function buildPool() {
       .setChoiceValues(['1-20s','21-40s','41-60s','61-80s','>80s']).setRequired(true);
 
   form.addMultipleChoiceItem().setTitle('Q11. Total goals - band')
-      .setChoiceValues(['<270','270-285','285-300','>300']).setRequired(true);
+      .setChoiceValues(['<270','270-285','286-300','>300']).setRequired(true);
 
   Logger.log('SHARE this link: ' + form.getPublishedUrl());
   Logger.log('EDIT it here:   ' + form.getEditUrl());
