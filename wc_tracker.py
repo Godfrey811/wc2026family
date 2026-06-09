@@ -479,10 +479,10 @@ def write_guide():
 past World Cup (and 51 at a Euro). Every tournament total scales up by roughly <b>1.6x</b> vs an old
 World Cup.</div>
 
-<div class="note">📌 <b>All goal counts on this page exclude penalty-shootout kicks.</b> A shootout decides
-who advances, but those penalties are <b>not</b> goals - so "goals in the final" and "total goals" only
-count goals in play (including extra time). <b>The one exception is Q5</b> (goals in the final), which
-explicitly counts shootout kicks if the final goes to penalties.</div>
+<div class="note">📌 <b>Goal counts exclude penalty-shootout kicks - with one exception, Q5.</b> A shootout
+decides who advances, but those kicks aren't goals, so <b>total goals (Q11)</b> counts only goals in play
+(including extra time). <b>Q5 (goals in the final) is the exception</b> - it <b>does</b> add the shootout
+kicks when the final goes to penalties.</div>
 
 <p class="legend">Markers: <span class="mark">★</span> = stats in the reference tables below ·
 <span class="mark">★★</span> = its own detailed section below. Each question is worth <b>100 points</b>
