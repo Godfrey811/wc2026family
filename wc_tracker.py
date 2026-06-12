@@ -554,6 +554,8 @@ QLABELS = {
     "q9_scoreline_once": "Scoreline that happens once", "q10_fastest_goal_band": "Fastest goal",
     "q11_total_goals_band": "Total goals",
 }
+# Whole-tournament totals: their live value is a FORECAST (pace x 104), not a result.
+FORECAST_QS = {"q2_own_goals", "q3_red_cards", "q11_total_goals_band"}
 DEMO_NAMES = ["Player A", "Player B", "Player C", "Player D", "Player E", "Player F",
               "Player G", "Player H", "Player I", "Player J", "Player K", "Player L"]
 DEMO_OPTIONS = {
@@ -614,21 +616,38 @@ def build_live_results(agg, live_feed):
     from longest_names_wiki import name_letters
     lf = {k: v for k, v in (live_feed or {}).items() if v not in ("", None)}
     gp = agg["matches_played"]
-    res = {
-        "q4_pen_shootouts": len(agg["penalty_shootouts"]),
-    }
-    if gp:                                   # 2 own goals so far -> band
-        res["q2_own_goals"] = _own_goals_band(agg["own_goals"])
-    if lf.get("q3_red_cards") not in (None, ""):   # 3 red cards (manual count) -> band
-        res["q3_red_cards"] = _red_cards_band(int(float(lf["q3_red_cards"])))
+
+    def fc(n):                       # forecast over all 104 games if the current pace holds
+        return round(n / gp * 104) if gp else n
+
+    def note(n, unit):
+        return (f"{n} {unit} in {gp} game{'s' if gp != 1 else ''} = "
+                f"{n / gp:.2g}/game -> {fc(n)} projected over 104")
+
+    res = {"q4_pen_shootouts": len(agg["penalty_shootouts"])}
+    notes = {}
+    if gp:                                   # 2 own goals -> FORECAST band
+        res["q2_own_goals"] = _own_goals_band(fc(agg["own_goals"]))
+        notes["q2_own_goals"] = note(agg["own_goals"], "own goals")
+    if lf.get("q3_red_cards") not in (None, ""):   # 3 red cards -> FORECAST band
+        rc = int(float(lf["q3_red_cards"]))
+        res["q3_red_cards"] = _red_cards_band(fc(rc) if gp else rc)
+        if gp:
+            notes["q3_red_cards"] = note(rc, "red cards")
     if agg["scorers"]:                       # 1 longest-named scorer so far
         res["q1_longest_name_letters"] = max(name_letters(n)[0] for (n, _t) in agg["scorers"])
     if gp:                                   # 9 scorelines that have happened exactly once so far
         once = ";".join(k for k, v in agg["scoreline_counts"].items() if v == 1)
         if once:
             res["q9_scoreline_once"] = once
-    if gp:                                   # 11 total goals so far -> band
-        res["q11_total_goals_band"] = _total_goals_band(agg["total_goals"])
+    if gp:                                   # 11 total goals -> FORECAST band
+        res["q11_total_goals_band"] = _total_goals_band(fc(agg["total_goals"]))
+        notes["q11_total_goals_band"] = note(agg["total_goals"], "goals")
+    if gp and agg["all_groups"]:             # 7 group with fewest goals (tie -> all share)
+        gg = {g: agg["group_goals"].get(g, 0) for g in agg["all_groups"]}
+        lo = min(gg.values())
+        res["q7_group_fewest_goals"] = ";".join(sorted(g for g, v in gg.items() if v == lo))
+    res["_forecast_notes"] = notes
     for k in ("q5_final_goals", "q6_continent", "q8_youngest_age", "q10_fastest_goal_band"):
         if lf.get(k):                        # held until the final / manual feed
             res[k] = lf[k]
@@ -669,7 +688,9 @@ def write_html(agg, players, standings=None, is_demo=False, outcomes=None, show_
         v = outcomes.get(k)
         return v if v not in (None, "") else "-"
 
-    proj_rows = "\n".join(f"<tr><td>{QLABELS[k]}</td><td>{outcome_cell(k)}</td></tr>" for k in QLABELS)
+    proj_rows = "\n".join(
+        f"<tr><td>{QLABELS[k]}{' <span class=\"fc\">(forecast)</span>' if k in FORECAST_QS else ''}</td>"
+        f"<td>{outcome_cell(k)}</td></tr>" for k in QLABELS)
 
     # Live counts: total so far, avg/game, forecast over 104 games (if the pace holds).
     gp = agg["matches_played"]
@@ -688,8 +709,10 @@ def write_html(agg, players, standings=None, is_demo=False, outcomes=None, show_
     lc_rows = "\n".join(f"<tr><td>{a}</td><td>{b}</td><td>{c}</td><td>{d}</td></tr>"
                         for a, b, c, d in live_counts)
     outcomes_heading = "Results so far (live - drives the leaderboard)"
-    outcomes_sub = ("Everything the leaderboard scores on. Counts are live; '-' = not determinable yet "
-                    "(needs the final, a scorer, or a manual feed). Group goals shows every group, fewest first.")
+    outcomes_sub = ("Everything the leaderboard scores on. '-' = not determinable yet (needs the final, a "
+                    "scorer, or a manual feed). Rows marked <b>(forecast)</b> are whole-tournament totals "
+                    "projected from the current pace (x104) - they'll swing early and settle as games play. "
+                    "Group goals shows every group, fewest first.")
 
     html = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -773,22 +796,31 @@ def write_entries(preds, show):
     (OUT / "entries.html").write_text(html)
 
 
-def write_shares(standings, outcomes):
+def write_shares(standings, outcomes, preds=None):
     """Per-question point-shares page: for each question, the pot, the result so far,
-    and how its points are currently split across players."""
+    how its points split across players, and what each scoring player predicted."""
     import settle
     outcomes = outcomes or {}
+    pred_by_name = {r.get("name"): r for r in (preds or [])}
+    notes = outcomes.get("_forecast_notes", {})
     secs = []
     for col, _kind in settle.QUESTIONS:
         pot = settle.POINTS.get(col, settle.DEFAULT_POT)
         result = outcomes.get(col)
         result = result if result not in (None, "") else "not settled yet"
+        if col == "q7_group_fewest_goals" and result and ";" in str(result):   # tie -> readable
+            gs = [x.replace("Group ", "") for x in str(result).split(";")]
+            result = f"{len(gs)}-way tie for fewest: {', '.join(gs)}"
+        label = "Predicted result (forecast if the pace holds)" if col in FORECAST_QS else "Result so far"
+        extra = f' <span class="note">({notes[col]})</span>' if col in notes else ""
         shares = sorted(((n, d[col]) for (n, _t, d) in standings if col in d), key=lambda x: -x[1])
-        body = "".join(f"<tr><td>{n}</td><td>{s:g}</td></tr>" for n, s in shares) \
-            or '<tr><td colspan="2">nobody scoring this yet</td></tr>'
+        body = "".join(
+            f"<tr><td>{n}</td><td>{(pred_by_name.get(n, {}).get(col) or '-')}</td><td>{s:g}</td></tr>"
+            for n, s in shares) \
+            or '<tr><td colspan="3">nobody scoring this yet</td></tr>'
         secs.append(f'<h2>{QLABELS.get(col, col)} <span class="pot">{pot} pts</span></h2>'
-                    f'<p class="sub">Result so far: <b>{result}</b></p>'
-                    f'<table><tr><th>Player</th><th>Points</th></tr>{body}</table>')
+                    f'<p class="sub">{label}: <b>{result}</b>{extra}</p>'
+                    f'<table><tr><th>Player</th><th>Predicted</th><th>Points</th></tr>{body}</table>')
     html = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>WC 2026 Pool - Point shares per question</title>
@@ -808,11 +840,36 @@ def write_shares(standings, outcomes):
     (OUT / "shares.html").write_text(html)
 
 
+def _merge_manual_matches(matches, root):
+    """Inject locally-entered games from manual_matches.json so the live counts /
+    scoring reflect reality before openfootball posts them. Fills a known fixture's
+    score+goals in place; appends if unknown. Once openfootball has the game as
+    PLAYED, the manual copy is ignored (openfootball wins)."""
+    p = root / "manual_matches.json"
+    if not p.exists():
+        return
+    try:
+        manual = json.load(open(p, encoding="utf-8"))
+    except Exception as e:
+        print(f"(manual_matches.json skipped: {e})")
+        return
+    by_pair = {}
+    for m in matches:
+        by_pair.setdefault((m.get("team1"), m.get("team2")), m)
+    for mm in manual:
+        existing = by_pair.get((mm.get("team1"), mm.get("team2")))
+        if existing is None:
+            matches.append(mm)
+        elif not is_played(existing):
+            existing.update(mm)
+
+
 def main():
     OUT.mkdir(exist_ok=True)
     want_players = "--players" in sys.argv
 
     matches = load_openfootball()
+    _merge_manual_matches(matches, Path(__file__).parent)
     agg = aggregate(matches)
 
     # fixtures.csv -- everything, played or not
@@ -861,18 +918,22 @@ def main():
               "player fetch, using openfootball scorers instead.")
         want_players = False
     if want_players:
-        players = fetch_players()
-        players.sort(key=lambda p: (-p["goals"], -p["assists"]))
-        write_csv(
-            OUT / "players_apifootball.csv",
-            [[p["player"], p["team"], p["goals"], p["assists"],
-              p["minutes"], p["yellow"], p["red"]] for p in players],
-            ["player", "team", "goals", "assists", "minutes", "yellow", "red"],
-        )
-        total_reds = sum(p["red"] for p in players)
-        print(f"\nAPI-Football: {len(players)} players, total red cards (from "
-              f"scorers list - not all players): {total_reds}")
-        print("   -> wrote players_apifootball.csv")
+        try:                                  # never let an API-Football hiccup block the build
+            players = fetch_players()
+            players.sort(key=lambda p: (-p["goals"], -p["assists"]))
+            write_csv(
+                OUT / "players_apifootball.csv",
+                [[p["player"], p["team"], p["goals"], p["assists"],
+                  p["minutes"], p["yellow"], p["red"]] for p in players],
+                ["player", "team", "goals", "assists", "minutes", "yellow", "red"],
+            )
+            total_reds = sum(p["red"] for p in players)
+            print(f"\nAPI-Football: {len(players)} players, total red cards (from "
+                  f"scorers list - not all players): {total_reds}")
+            print("   -> wrote players_apifootball.csv")
+        except Exception as e:
+            print(f"(API-Football fetch skipped: {e}) - building with openfootball data")
+            players = []
 
     # Refresh longest-names + youngest-members from Wikipedia squads (keyless). Best-effort.
     try:
@@ -936,7 +997,7 @@ def main():
         standings = settle.compute_standings(preds, outcomes)
         write_csv(OUT / "standings.csv",
                   [(i, n, p) for i, (n, p, _) in enumerate(standings, 1)], ["rank", "name", "points"])
-        write_shares(standings, outcomes)
+        write_shares(standings, outcomes, preds)
         print(f"Standings: {len(standings)} entries" + (" (demo names)" if is_demo else ""))
     except Exception as e:
         print(f"(standings skipped: {e})")
