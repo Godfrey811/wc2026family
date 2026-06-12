@@ -24,20 +24,28 @@ from pathlib import Path
 HERE = Path(__file__).parent
 OUT = HERE / "out"
 
-# (column, kind). kind: num | age | pick | scoreline
+# (column, kind). kind: num | age | pick | scoreline | band
+# band = ordered ranges scored by CLOSEST band (split ties), not exact match.
 QUESTIONS = [
     ("q1_longest_name_letters", "num"),
-    ("q2_own_goals", "pick"),
-    ("q3_red_cards", "pick"),
+    ("q2_own_goals", "band"),
+    ("q3_red_cards", "band"),
     ("q4_pen_shootouts", "num"),
     ("q5_final_goals", "num"),
     ("q6_continent", "pick"),
     ("q7_group_fewest_goals", "pick"),
     ("q8_youngest_age", "age"),
     ("q9_scoreline_once", "scoreline"),
-    ("q10_fastest_goal_band", "pick"),
-    ("q11_total_goals_band", "pick"),
+    ("q10_fastest_goal_band", "band"),
+    ("q11_total_goals_band", "band"),
 ]
+# Ordered band options (must match the form), for closest-band scoring.
+BANDS = {
+    "q2_own_goals": ["<6", "6-10", "11-15", "16+"],
+    "q3_red_cards": ["<4", "4-7", "8-11", "12+"],
+    "q10_fastest_goal_band": ["1-20s", "21-40s", "41-60s", "61-80s", ">80s"],
+    "q11_total_goals_band": ["<270", "270-285", "286-300", ">300"],
+}
 DEFAULT_POT = 100
 # Per-question point pots (default 100 unless listed here).
 POINTS = {
@@ -127,6 +135,23 @@ def compute_standings(pred_rows, result):
                     for n in names:
                         points[n] += per
                         detail[n][col] = round(per, 1)
+
+        elif kind == "band":
+            # Ordered ranges: score the CLOSEST band(s) to the actual, splitting ties.
+            order = [_norm(b) for b in BANDS.get(col, [])]
+            tgt = _norm(actual)
+            if not order or tgt not in order:
+                continue
+            ti = order.index(tgt)
+            scored = [(n, abs(order.index(_norm(v)) - ti)) for n, v in picks if _norm(v) in order]
+            if not scored:
+                continue
+            best = min(d for _, d in scored)
+            winners = [n for n, d in scored if d == best]
+            share = pot / len(winners)
+            for n in winners:
+                points[n] += share
+                detail[n][col] = round(share, 1)
 
     table = sorted(((n, round(p, 1), detail[n]) for n, p in points.items()),
                    key=lambda x: -x[1])
