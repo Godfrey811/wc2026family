@@ -652,6 +652,8 @@ def build_live_results(agg, live_feed):
         gg = {g: agg["group_goals"].get(g, 0) for g in agg["all_groups"]}
         lo = min(gg.values())
         res["q7_group_fewest_goals"] = ";".join(sorted(g for g, v in gg.items() if v == lo))
+        res["_q7_fewest_goals"] = lo
+        res["_q7_group_goals"] = gg          # so the settler can cascade to the fewest PICKED group
     res["_forecast_notes"] = notes
     for k in ("q5_final_goals", "q6_continent", "q8_youngest_age", "q10_fastest_goal_band"):
         if lf.get(k):                        # held until the final / manual feed
@@ -813,9 +815,23 @@ def write_shares(standings, outcomes, preds=None):
         pot = settle.POINTS.get(col, settle.DEFAULT_POT)
         result = outcomes.get(col)
         result = result if result not in (None, "") else "not settled yet"
-        if col == "q7_group_fewest_goals" and result and ";" in str(result):   # tie -> readable
-            gs = [x.replace("Group ", "") for x in str(result).split(";")]
-            result = f"{len(gs)}-way tie for fewest: {', '.join(gs)}"
+        if col == "q7_group_fewest_goals" and outcomes.get(col):
+            gg = outcomes.get("_q7_group_goals") or {}
+            n_goals = outcomes.get("_q7_fewest_goals", 0)
+            tf = str(outcomes.get(col))
+            if ";" in tf:
+                gs = [x.replace("Group ", "") for x in tf.split(";")]
+                result = f"{len(gs)}-way tie for fewest: {', '.join(gs)}"
+            else:
+                result = f"{tf} ({n_goals} goals)"
+            pg = {(r.get(col) or "").strip(): gg.get((r.get(col) or "").strip())
+                  for r in (preds or []) if (r.get(col) or "").strip() in gg}
+            if pg:
+                lo = min(pg.values())
+                if lo > n_goals:
+                    wg = ", ".join(sorted(g.replace("Group ", "") for g, v in pg.items() if v == lo))
+                    result += (f" — nobody picked it, so it cascades to the fewest PICKED group"
+                               f"{'s' if wg.count(',') else ''}: {wg} ({lo} goals)")
         label = "Predicted result (forecast if the pace holds)" if col in FORECAST_QS else "Result so far"
         extra = f' <span class="note">({notes[col]})</span>' if col in notes else ""
         shares = sorted(((n, d[col]) for (n, _t, d) in standings if col in d), key=lambda x: -x[1])
