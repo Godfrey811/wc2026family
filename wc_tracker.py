@@ -104,6 +104,7 @@ def aggregate(matches):
     team_against = defaultdict(int)
     group_goals = defaultdict(int)
     scorers = defaultdict(int)
+    scorer_dates = {}            # scorer name -> earliest match date they scored (for Q8 age)
     og_scorers = []
     pen_shootouts = []
     own_goals = 0
@@ -135,6 +136,9 @@ def aggregate(matches):
             pen_shootouts.append(f'{m["team1"]} v {m["team2"]} ({m.get("round","?")})')
         for name, team in parse_scorers(m):
             scorers[(name, team)] += 1
+            d = m.get("date")
+            if d and (name not in scorer_dates or d < scorer_dates[name]):
+                scorer_dates[name] = d
 
     return {
         "matches_played": len(played),
@@ -151,6 +155,7 @@ def aggregate(matches):
         "team_against": dict(team_against),
         "group_goals": dict(group_goals),
         "scorers": scorers,
+        "scorer_dates": dict(scorer_dates),
         "og_scorers": og_scorers,
         "own_goals": own_goals,
         "scoreline_counts": dict(scoreline_counts),
@@ -607,6 +612,50 @@ def _total_goals_band(n):
     return ">300"
 
 
+def _read_scorer_dobs(root):
+    """name -> 'YYYY-MM-DD' birthdates, so Q8 youngest-scorer is DERIVED, not hand-typed."""
+    p = root / "scorer_dobs.csv"
+    if not p.exists():
+        return {}
+    with open(p, encoding="utf-8") as f:
+        return {r["name"].strip(): r["dob"].strip()
+                for r in csv.DictReader(f) if r.get("name") and r.get("dob")}
+
+
+def _age_on(dob_iso, on_iso):
+    """(years, days) age on a date, e.g. ('2006-02-11','2026-06-14') -> (20, 123)."""
+    from datetime import date
+    try:
+        dob, on = date.fromisoformat(dob_iso), date.fromisoformat(on_iso)
+    except (ValueError, TypeError):
+        return None
+    had_bday = (on.month, on.day) >= (dob.month, dob.day)
+    years = on.year - dob.year - (0 if had_bday else 1)
+    try:
+        last_bday = dob.replace(year=on.year if had_bday else on.year - 1)
+    except ValueError:                     # 29 Feb birthday in a non-leap year
+        last_bday = date(on.year if had_bday else on.year - 1, 3, 1)
+    return years, (on - last_bday).days
+
+
+def _derive_youngest_scorer(agg, root):
+    """Youngest goalscorer SO FAR as 'Xy Yd', from scorer_dobs.csv + each scorer's match
+    date. None if no scorer has a known DOB. Warns on missing DOBs."""
+    dobs = _read_scorer_dobs(root)
+    dates = agg.get("scorer_dates", {})
+    if not dobs or not dates:
+        return None
+    missing = sorted(n for n in dates if n not in dobs)
+    if missing:
+        print(f"(Q8: no DOB for {len(missing)} scorer(s) - add to scorer_dobs.csv: {', '.join(missing)})")
+    ages = [(_age_on(dobs[n], dates[n]), n) for n in dates if n in dobs]
+    ages = [(a, n) for a, n in ages if a]
+    if not ages:
+        return None
+    (yy, dd), _ = min(ages)
+    return f"{yy}y {dd}d"
+
+
 def build_live_results(agg, live_feed):
     """
     Current LIVE snapshot for the leaderboard + outcomes table. Reflects what's known
@@ -658,6 +707,9 @@ def build_live_results(agg, live_feed):
     for k in ("q5_final_goals", "q6_continent", "q8_youngest_age", "q10_fastest_goal_band"):
         if lf.get(k):                        # held until the final / manual feed
             res[k] = lf[k]
+    _young = _derive_youngest_scorer(agg, Path(__file__).parent)   # 8 youngest scorer - DERIVED
+    if _young:                                                     # overrides any stale live_feed value
+        res["q8_youngest_age"] = _young
     _s = str(lf.get("q10_seconds", "")).strip()    # exact fastest-goal seconds -> seconds-distance waterfall
     if _s.isdigit():
         res["_q10_seconds"] = int(_s)
