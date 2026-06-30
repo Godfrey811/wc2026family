@@ -564,7 +564,7 @@ QLABELS = {
     "q11_total_goals_band": "Total goals",
 }
 # Whole-tournament totals: their live value is a FORECAST (pace x 104), not a result.
-FORECAST_QS = {"q2_own_goals", "q3_red_cards", "q11_total_goals_band"}
+FORECAST_QS = {"q2_own_goals", "q3_red_cards", "q4_pen_shootouts", "q11_total_goals_band"}
 DEMO_NAMES = ["Player A", "Player B", "Player C", "Player D", "Player E", "Player F",
               "Player G", "Player H", "Player I", "Player J", "Player K", "Player L"]
 DEMO_OPTIONS = {
@@ -673,12 +673,22 @@ def build_live_results(agg, live_feed):
     def fc(n):                       # forecast over all 104 games if the current pace holds
         return round(n / gp * 104) if gp else n
 
+    ko_played = agg["matches_played"] - agg["group_played"]   # knockout games played so far
+    ko_total = agg["matches_total"] - agg["group_total"]      # 32 knockout games in total
+    def fc_ko(n):                    # forecast over ALL knockout games from the knockout-stage pace
+        return round(n / ko_played * ko_total) if ko_played else n
+
     def note(n, unit):
         return (f"{n} {unit} in {gp} game{'s' if gp != 1 else ''} = "
                 f"{n / gp:.2g}/game -> {fc(n)} projected over 104")
 
-    res = {"q4_pen_shootouts": len(agg["penalty_shootouts"])}
+    res = {"q4_pen_shootouts": fc_ko(len(agg["penalty_shootouts"]))}   # knockout-only -> forecast over 32 KO games
     notes = {}
+    if ko_played:                    # Q4 forecasts over the 32 KNOCKOUT games (shootouts can't happen in groups)
+        _ns = len(agg["penalty_shootouts"])
+        notes["q4_pen_shootouts"] = (f"{_ns} shootout{'s' if _ns != 1 else ''} in {ko_played} knockout "
+                                     f"game{'s' if ko_played != 1 else ''} = {_ns / ko_played:.2g}/game "
+                                     f"-> {fc_ko(_ns)} projected over {ko_total}")
     if gp:                                   # 2 own goals -> FORECAST band
         res["q2_own_goals"] = _own_goals_band(fc(agg["own_goals"]))
         notes["q2_own_goals"] = note(agg["own_goals"], "own goals")
