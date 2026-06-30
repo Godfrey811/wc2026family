@@ -704,6 +704,7 @@ def build_live_results(agg, live_feed):
         once = ";".join(k for k, v in agg["scoreline_counts"].items() if v == 1)
         if once:
             res["q9_scoreline_once"] = once
+        res["_q9_scoreline_counts"] = agg["scoreline_counts"]  # so the settler can cascade once->twice->...
     if gp:                                   # 11 total goals -> FORECAST band
         res["q11_total_goals_band"] = _total_goals_band(fc(agg["total_goals"]))
         notes["q11_total_goals_band"] = note(agg["total_goals"], "goals")
