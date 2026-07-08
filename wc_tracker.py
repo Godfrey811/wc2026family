@@ -739,6 +739,31 @@ def make_demo_predictions():
     return rows
 
 
+# Family team-sweepstake: each person's drawn teams score by how far they go.
+FAMILY_SWEEP_POINTS = {"group": 0, "R32": 0, "R16": 0, "QF": 15,
+                       "SF": 40, "fourth": 40, "third": 60, "RU": 80, "winner": 125}
+
+
+def sweepstake_board():
+    """Read family_draw.csv (name,team) + family_progression.csv (team,stage) and
+    return [(name, points, [(team, stage, pts), ...])] sorted high->low. [] if no draw."""
+    root = OUT.parent
+    draw_p, prog_p = root / "family_draw.csv", root / "family_progression.csv"
+    if not (draw_p.exists() and prog_p.exists()):
+        return []
+    with open(prog_p, encoding="utf-8") as f:
+        stage = {r["team"].strip(): (r.get("stage") or "").strip() for r in csv.DictReader(f)}
+    tot, detail = defaultdict(float), defaultdict(list)
+    with open(draw_p, encoding="utf-8") as f:
+        for r in csv.DictReader(f):
+            name, team = r["name"].strip(), r["team"].strip()
+            st = stage.get(team, "")
+            pts = FAMILY_SWEEP_POINTS.get(st, 0)
+            tot[name] += pts
+            detail[name].append((team, st, pts))
+    return [(n, tot[n], detail[n]) for n in sorted(tot, key=lambda x: -tot[x])]
+
+
 def write_html(agg, players, standings=None, is_demo=False, outcomes=None, show_entries=False):
     """Render a single self-contained index.html for GitHub Pages."""
     outcomes = outcomes or {}
@@ -803,6 +828,24 @@ def write_html(agg, players, standings=None, is_demo=False, outcomes=None, show_
                     "projected from the current pace (x104) - they'll swing early and settle as games play. "
                     "Group goals shows every group, fewest first.")
 
+    # Team sweepstake (each person's drawn teams score by how far they go)
+    sweep = sweepstake_board()
+    if sweep:
+        sw_rows = "\n".join(
+            "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(
+                i, n, int(p),
+                ", ".join(f"{t} ({int(pt)})" for t, s, pt in det))
+            for i, (n, p, det) in enumerate(sorted(sweep, key=lambda x: -x[1]), 1))
+        sweep_section = (
+            '<h2>🎟️ Team sweepstake</h2>'
+            '<p class="sub">Each person\'s drawn teams score by how far they reach: '
+            'winner <b>125</b>, runner-up <b>80</b>, 3rd <b>60</b>, 4th <b>40</b>, '
+            'quarter-final <b>15</b> (out in the R16 or earlier scores 0).</p>'
+            '<table><tr><th>#</th><th>Name</th><th>Points</th><th>Teams (pts)</th></tr>\n'
+            + sw_rows + '\n</table>\n')
+    else:
+        sweep_section = ""
+
     html = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>WC 2026 Family Pool</title>
@@ -826,6 +869,7 @@ def write_html(agg, players, standings=None, is_demo=False, outcomes=None, show_
  <div class="card"><div class="n">{agg['matches_played'] - agg['group_played']}/{agg['matches_total'] - agg['group_total']}</div><div class="l">Knockout games</div></div>
 </div>
 
+{sweep_section}
 <h2>🏆 Leaderboard {'(preview)' if is_demo else ''}</h2>
 {demo_note}
 <table><tr><th>#</th><th>Name</th><th>Points</th></tr>
