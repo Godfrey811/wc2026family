@@ -846,6 +846,26 @@ def write_html(agg, players, standings=None, is_demo=False, outcomes=None, show_
     else:
         sweep_section = ""
 
+    # Combined leaderboard (sweepstake + questions), shown only when the sweepstake exists
+    if sweep:
+        s_pts = {n: p for n, p, _ in sweep}
+        # questions scores only count when there are REAL entries (not the demo preview)
+        q_pts = {} if is_demo else {n: p for (n, p, _) in standings}
+        names = list(dict.fromkeys(list(s_pts) + list(q_pts)))  # everyone in either pool
+        comb = sorted(((n, s_pts.get(n, 0.0), q_pts.get(n, 0.0)) for n in names),
+                      key=lambda x: -(x[1] + x[2]))
+        comb_rows = "\n".join(
+            f"<tr><td>{i}</td><td>{n}</td><td>{int(s)}</td><td>{round(q, 1)}</td>"
+            f"<td><b>{round(s + q, 1)}</b></td></tr>"
+            for i, (n, s, q) in enumerate(comb, 1))
+        combined_section = (
+            f"<h2>🏆 Combined leaderboard {'(preview)' if is_demo else ''}</h2>"
+            '<p class="sub">Team sweepstake + question predictions, added together.</p>'
+            '<table><tr><th>#</th><th>Name</th><th>Sweepstake</th><th>Questions</th>'
+            '<th>Total</th></tr>\n' + comb_rows + '\n</table>\n')
+    else:
+        combined_section = ""
+
     html = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>WC 2026 Family Pool</title>
@@ -869,8 +889,9 @@ def write_html(agg, players, standings=None, is_demo=False, outcomes=None, show_
  <div class="card"><div class="n">{agg['matches_played'] - agg['group_played']}/{agg['matches_total'] - agg['group_total']}</div><div class="l">Knockout games</div></div>
 </div>
 
+{combined_section}
 {sweep_section}
-<h2>🏆 Leaderboard {'(preview)' if is_demo else ''}</h2>
+<h2>📝 Questions leaderboard {'(preview)' if is_demo else ''}</h2>
 {demo_note}
 <table><tr><th>#</th><th>Name</th><th>Points</th></tr>
 {lb_rows}
