@@ -741,7 +741,7 @@ def make_demo_predictions():
 
 # Family team-sweepstake: each person's drawn teams score by how far they go.
 FAMILY_SWEEP_POINTS = {"group": 0, "R32": 0, "R16": 0, "QF": 15,
-                       "SF": 40, "fourth": 40, "third": 60, "RU": 80, "winner": 125}
+                       "SF": 40, "fourth": 40, "third": 60, "RU": 80, "winner": 150}
 
 
 def sweepstake_board():
@@ -839,7 +839,7 @@ def write_html(agg, players, standings=None, is_demo=False, outcomes=None, show_
         sweep_section = (
             '<h2>🎟️ Team sweepstake</h2>'
             '<p class="sub">Each person\'s drawn teams score by how far they reach: '
-            'winner <b>125</b>, runner-up <b>80</b>, 3rd <b>60</b>, 4th <b>40</b>, '
+            'winner <b>150</b>, runner-up <b>80</b>, 3rd <b>60</b>, 4th <b>40</b>, '
             'quarter-final <b>15</b> (out in the R16 or earlier scores 0).</p>'
             '<table><tr><th>#</th><th>Name</th><th>Points</th><th>Teams (pts)</th></tr>\n'
             + sw_rows + '\n</table>\n')
